@@ -2,8 +2,7 @@ package main
 
 import "fmt"
 
-func printMenu() []string {
-
+func printMenu() {
 	fmt.Println("Hello there 👋🏻! Welcome to Task Tracker")
 	fmt.Println("Choose from the list of options to get started:")
 	fmt.Println()
@@ -18,5 +17,13 @@ func printMenu() []string {
 		"List tasks in progress",
 	}
 
-	return options
+	for i, option := range options {
+		fmt.Printf("[%d] %s\n", i+1, option)
+	}
+}
+
+func printFormattedTasks(tasks []Task) {
+	for i, task := range tasks {
+		fmt.Printf("%d. %s, status = %s \n", i+1, task.Description, task.Status)
+	}
 }

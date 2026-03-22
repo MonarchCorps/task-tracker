@@ -1,175 +1,142 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"os"
+	"strings"
 )
 
-func addTask() {
-	// Create a scanner that reads from the keyboard (os.Stdin)
-	scanner := bufio.NewScanner(os.Stdin)
-
-	fmt.Print("Enter a description: ")
-	scanner.Scan() // Reads the whole line until you press Enter
-	description := scanner.Text()
-
-	var status Status
-
-	for {
-		fmt.Print("Enter a status (Todo, In-Progress, Done): ")
-		scanner.Scan()
-		input := scanner.Text()
-
-		parsedStatus, ok := parseStatus(input)
-
-		if ok {
-			status = parsedStatus
-			break
+func getNextID(tasks []Task) int {
+	maxID := 0
+	for _, t := range tasks {
+		if t.ID > maxID {
+			maxID = t.ID
 		}
+	}
+	return maxID + 1
+}
 
-		fmt.Println("Invalid status. Try again.")
-
+func addTask() {
+	description := getStringInput("Enter description: ")
+	if strings.TrimSpace(description) == "" {
+		fmt.Println("Description cannot be empty")
+		return
 	}
 
-	loadedTasks, _ := loadTasks()
+	var status Status
+	for {
+		input := getStringInput("Enter status (todo, in-progress, done): ")
+		parsed, ok := parseStatus(input)
+		if ok {
+			status = parsed
+			break
+		}
+		fmt.Println("Invalid status. Try again.")
+	}
+
+	tasks, err := loadTasks()
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
 
 	newTask := Task{
-		ID:          len(loadedTasks) + 1,
+		ID:          getNextID(tasks),
 		Description: description,
 		Status:      status,
 	}
 
-	tasks := append(loadedTasks, newTask)
+	tasks = append(tasks, newTask)
 
-	err := saveTasks(tasks)
-
-	if err != nil {
-		fmt.Print("Error saving tasks: ", err)
+	if err := saveTasks(tasks); err != nil {
+		fmt.Println("Error saving:", err)
 		return
 	}
 
-	fmt.Println("Tasks saved.")
+	fmt.Println("✅ Task added.")
 }
 
 func updateTask() {
-	choice := 0
-	input := ""
-	var (
-		description string
-		status      Status
-	)
-
 	tasks, err := loadTasks()
 	if err != nil {
-		fmt.Print("Error loading tasks: ", err)
+		fmt.Println("Error:", err)
 		return
 	}
 
-	fmt.Println("Here are your lists of tasks: ")
+	if len(tasks) == 0 {
+		fmt.Println("No tasks available.")
+		return
+	}
+
 	printFormattedTasks(tasks)
 
+	choice := getIntInput("Select task to update: ")
+	if choice < 1 || choice > len(tasks) {
+		fmt.Println("Invalid selection")
+		return
+	}
+
+	description := getStringInput("Enter new description: ")
+	if strings.TrimSpace(description) == "" {
+		fmt.Println("Description cannot be empty")
+		return
+	}
+
+	var status Status
 	for {
-		fmt.Println()
-		fmt.Print("Select a task to update: ")
-
-		_, choiceError := fmt.Scanln(&choice)
-
-		if choiceError != nil {
-			fmt.Print("Error scanning tasks: ", choiceError)
-			return
-		} else if choice < 1 || choice > len(tasks) {
-			fmt.Print("Invalid task count. Try again.")
-		} else {
+		input := getStringInput("Enter new status: ")
+		parsed, ok := parseStatus(input)
+		if ok {
+			status = parsed
 			break
 		}
+		fmt.Println("Invalid status. Try again.")
 	}
 
-	fmt.Print("Enter a description: ")
-	fmt.Scanln(&description)
+	tasks[choice-1].Description = description
+	tasks[choice-1].Status = status
 
-	fmt.Print("Enter a status (Todo, In-Progress, Done): ")
-	fmt.Scanln(&input)
-	parsedStatus, ok := parseStatus(input)
-
-	if ok {
-		status = parsedStatus
-
-		tasks[choice-1] = Task{
-			ID:          tasks[choice-1].ID,
-			Description: description,
-			Status:      status,
-		}
-
-		saveTasks(tasks)
-
-		fmt.Println("Updated task: ", tasks)
-
+	if err := saveTasks(tasks); err != nil {
+		fmt.Println("Error saving:", err)
+		return
 	}
 
+	fmt.Println("✅ Task updated.")
 }
 
 func deleteTask() {
-	choice := 0
-
 	tasks, err := loadTasks()
 	if err != nil {
-		fmt.Print("Error loading tasks: ", err)
+		fmt.Println("Error:", err)
 		return
 	}
 
-	fmt.Println("Here are your lists of tasks: ")
+	if len(tasks) == 0 {
+		fmt.Println("No tasks available.")
+		return
+	}
+
 	printFormattedTasks(tasks)
 
-	for {
-		fmt.Println()
-		fmt.Print("Select a task to delete: ")
-
-		_, choiceError := fmt.Scanln(&choice)
-
-		if choiceError != nil {
-			fmt.Print("Error scanning tasks: ", choiceError)
-			return
-		} else if choice < 1 || choice > len(tasks) {
-			fmt.Print("Invalid task count. Try again.")
-		} else {
-			break
-		}
-	}
-
-	var filteredTasks []Task
-	//
-	for i, task := range tasks {
-		if i != choice-1 {
-			filteredTasks = append(filteredTasks, task)
-		}
-	}
-
-	savedToFileError := saveTasks(filteredTasks)
-	if savedToFileError != nil {
-		fmt.Print("Error saving tasks: ", savedToFileError)
+	choice := getIntInput("Select task to delete: ")
+	if choice < 1 || choice > len(tasks) {
+		fmt.Println("Invalid selection")
 		return
 	}
 
-	fmt.Println("Tasks saved.")
+	tasks = append(tasks[:choice-1], tasks[choice:]...)
+
+	if err := saveTasks(tasks); err != nil {
+		fmt.Println("Error saving:", err)
+		return
+	}
+
+	fmt.Println("🗑️ Task deleted.")
 }
 
 func listAllTasks() {
 	tasks, err := loadTasks()
 	if err != nil {
-		fmt.Print("Error loading tasks: ", err)
-	}
-
-	fmt.Println(tasks)
-}
-
-func listCompletedTasks() {
-	filter := TaskFilter{
-		Statuses: []Status{Done},
-	}
-	tasks, err := filterTasks(filter)
-	if err != nil {
-		fmt.Print("Error finding tasks: ", err)
+		fmt.Println("Error:", err)
 		return
 	}
 
@@ -178,16 +145,15 @@ func listCompletedTasks() {
 		return
 	}
 
-	fmt.Println(tasks)
+	printFormattedTasks(tasks)
 }
 
-func listUncompletedTasks() {
-	filter := TaskFilter{
-		Statuses: []Status{InProgress, Todo},
-	}
+func listTasksByStatus(statuses []Status) {
+	filter := TaskFilter{Statuses: statuses}
+
 	tasks, err := filterTasks(filter)
 	if err != nil {
-		fmt.Print("Error finding tasks: ", err)
+		fmt.Println("Error:", err)
 		return
 	}
 
@@ -196,23 +162,5 @@ func listUncompletedTasks() {
 		return
 	}
 
-	fmt.Println(tasks)
-}
-
-func listTasksInProgress() {
-	filter := TaskFilter{
-		Statuses: []Status{InProgress},
-	}
-	tasks, err := filterTasks(filter)
-	if err != nil {
-		fmt.Print("Error finding tasks: ", err)
-		return
-	}
-
-	if len(tasks) == 0 {
-		fmt.Println("No tasks found.")
-		return
-	}
-
-	fmt.Println(tasks)
+	printFormattedTasks(tasks)
 }

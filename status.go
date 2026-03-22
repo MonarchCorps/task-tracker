@@ -3,7 +3,6 @@ package main
 import "strings"
 
 func parseStatus(input string) (Status, bool) {
-
 	formatted := strings.ToLower(strings.ReplaceAll(input, " ", "-"))
 
 	switch formatted {
