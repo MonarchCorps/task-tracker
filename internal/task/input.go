@@ -1,17 +1,21 @@
-package main
+package task
 
 import (
+	"bufio"
 	"fmt"
+	"os"
 	"strconv"
 )
 
-func getStringInput(prompt string) string {
+var reader = bufio.NewScanner(os.Stdin)
+
+func GetStringInput(prompt string) string {
 	fmt.Print(prompt)
 	reader.Scan()
 	return reader.Text()
 }
 
-func getIntInput(prompt string) int {
+func GetIntInput(prompt string) int {
 	for {
 		fmt.Print(prompt)
 		reader.Scan()

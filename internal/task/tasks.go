@@ -1,4 +1,4 @@
-package main
+package task
 
 import (
 	"fmt"
@@ -15,8 +15,8 @@ func getNextID(tasks []Task) int {
 	return maxID + 1
 }
 
-func addTask() {
-	description := getStringInput("Enter description: ")
+func AddTask() {
+	description := GetStringInput("Enter description: ")
 	if strings.TrimSpace(description) == "" {
 		fmt.Println("Description cannot be empty")
 		return
@@ -24,8 +24,8 @@ func addTask() {
 
 	var status Status
 	for {
-		input := getStringInput("Enter status (todo, in-progress, done): ")
-		parsed, ok := parseStatus(input)
+		input := GetStringInput("Enter status (todo, in-progress, done): ")
+		parsed, ok := ParseStatus(input)
 		if ok {
 			status = parsed
 			break
@@ -55,7 +55,7 @@ func addTask() {
 	fmt.Println("✅ Task added.")
 }
 
-func updateTask() {
+func UpdateTask() {
 	tasks, err := loadTasks()
 	if err != nil {
 		fmt.Println("Error:", err)
@@ -69,13 +69,13 @@ func updateTask() {
 
 	printFormattedTasks(tasks)
 
-	choice := getIntInput("Select task to update: ")
+	choice := GetIntInput("Select task to update: ")
 	if choice < 1 || choice > len(tasks) {
 		fmt.Println("Invalid selection")
 		return
 	}
 
-	description := getStringInput("Enter new description: ")
+	description := GetStringInput("Enter new description: ")
 	if strings.TrimSpace(description) == "" {
 		fmt.Println("Description cannot be empty")
 		return
@@ -83,8 +83,8 @@ func updateTask() {
 
 	var status Status
 	for {
-		input := getStringInput("Enter new status: ")
-		parsed, ok := parseStatus(input)
+		input := GetStringInput("Enter new status: ")
+		parsed, ok := ParseStatus(input)
 		if ok {
 			status = parsed
 			break
@@ -103,7 +103,7 @@ func updateTask() {
 	fmt.Println("✅ Task updated.")
 }
 
-func deleteTask() {
+func DeleteTask() {
 	tasks, err := loadTasks()
 	if err != nil {
 		fmt.Println("Error:", err)
@@ -117,7 +117,7 @@ func deleteTask() {
 
 	printFormattedTasks(tasks)
 
-	choice := getIntInput("Select task to delete: ")
+	choice := GetIntInput("Select task to delete: ")
 	if choice < 1 || choice > len(tasks) {
 		fmt.Println("Invalid selection")
 		return
@@ -133,7 +133,7 @@ func deleteTask() {
 	fmt.Println("🗑️ Task deleted.")
 }
 
-func listAllTasks() {
+func ListAllTasks() {
 	tasks, err := loadTasks()
 	if err != nil {
 		fmt.Println("Error:", err)
@@ -141,14 +141,14 @@ func listAllTasks() {
 	}
 
 	if len(tasks) == 0 {
-		fmt.Println("No tasks found.")
+		fmt.Println("No task found.")
 		return
 	}
 
 	printFormattedTasks(tasks)
 }
 
-func listTasksByStatus(statuses []Status) {
+func ListTasksByStatus(statuses []Status) {
 	filter := TaskFilter{Statuses: statuses}
 
 	tasks, err := filterTasks(filter)

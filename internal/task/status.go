@@ -1,8 +1,8 @@
-package main
+package task
 
 import "strings"
 
-func parseStatus(input string) (Status, bool) {
+func ParseStatus(input string) (Status, bool) {
 	formatted := strings.ToLower(strings.ReplaceAll(input, " ", "-"))
 
 	switch formatted {
