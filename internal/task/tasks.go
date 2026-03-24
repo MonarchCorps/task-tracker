@@ -55,45 +55,30 @@ func AddTask() {
 	fmt.Println("✅ Task added.")
 }
 
-func UpdateTask() {
+func UpdateTask(id int, description string, status Status) {
 	tasks, err := loadTasks()
 	if err != nil {
 		fmt.Println("Error:", err)
 		return
 	}
 
-	if len(tasks) == 0 {
-		fmt.Println("No tasks available.")
-		return
-	}
+	found := false
 
-	printFormattedTasks(tasks)
-
-	choice := GetIntInput("Select task to update: ")
-	if choice < 1 || choice > len(tasks) {
-		fmt.Println("Invalid selection")
-		return
-	}
-
-	description := GetStringInput("Enter new description: ")
-	if strings.TrimSpace(description) == "" {
-		fmt.Println("Description cannot be empty")
-		return
-	}
-
-	var status Status
-	for {
-		input := GetStringInput("Enter new status: ")
-		parsed, ok := ParseStatus(input)
-		if ok {
-			status = parsed
+	for i, t := range tasks {
+		if t.ID == id {
+			if description != "" {
+				tasks[i].Description = description
+			}
+			tasks[i].Status = status
+			found = true
 			break
 		}
-		fmt.Println("Invalid status. Try again.")
 	}
 
-	tasks[choice-1].Description = description
-	tasks[choice-1].Status = status
+	if !found {
+		fmt.Println("Task not found.")
+		return
+	}
 
 	if err := saveTasks(tasks); err != nil {
 		fmt.Println("Error saving:", err)
@@ -103,7 +88,7 @@ func UpdateTask() {
 	fmt.Println("✅ Task updated.")
 }
 
-func DeleteTask() {
+func DeleteTask(id int) {
 	tasks, err := loadTasks()
 	if err != nil {
 		fmt.Println("Error:", err)
@@ -115,17 +100,23 @@ func DeleteTask() {
 		return
 	}
 
-	printFormattedTasks(tasks)
+	var updated []Task
+	found := false
 
-	choice := GetIntInput("Select task to delete: ")
-	if choice < 1 || choice > len(tasks) {
-		fmt.Println("Invalid selection")
+	for _, t := range tasks {
+		if t.ID != id {
+			updated = append(updated, t)
+		} else {
+			found = true
+		}
+	}
+
+	if !found {
+		fmt.Println("Task not found.")
 		return
 	}
 
-	tasks = append(tasks[:choice-1], tasks[choice:]...)
-
-	if err := saveTasks(tasks); err != nil {
+	if err := saveTasks(updated); err != nil {
 		fmt.Println("Error saving:", err)
 		return
 	}
@@ -163,4 +154,27 @@ func ListTasksByStatus(statuses []Status) {
 	}
 
 	printFormattedTasks(tasks)
+}
+
+func AddTaskWithParams(description string, status Status) {
+	tasks, err := loadTasks()
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+
+	newTask := Task{
+		ID:          getNextID(tasks),
+		Description: description,
+		Status:      status,
+	}
+
+	tasks = append(tasks, newTask)
+
+	if err := saveTasks(tasks); err != nil {
+		fmt.Println("Error saving:", err)
+		return
+	}
+
+	fmt.Println("✅ Task added.")
 }
